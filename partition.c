@@ -6,27 +6,27 @@
 
 /* Head ends here */
 void partition(int ar_size, int *  ar) {
-int p = ar[0], index, index1 = 0, index2 = 0;
-int ar1[ar_size], ar2[ar_size];
-for (index = 1; index < ar_size; index++) {
-	int value = ar[index];
-	if (value < p) {
-		ar1[index1] = value;
-		index1++;
-	} else {
-		ar2[index2] = value;
-		index2++;
+	int p = ar[0], index, index1 = 0, index2 = 0;
+	int ar1[ar_size], ar2[ar_size];
+	for (index = 1; index < ar_size; index++) {
+		int value = ar[index];
+		if (value < p) {
+			ar1[index1] = value;
+			index1++;
+		} else {
+			ar2[index2] = value;
+			index2++;
+		}
 	}
-}
-for (int i = 0; i < ar_size; i++) {
-	if (i < index1) {
-		ar[i] = ar1[i];
-	} else if (i == index1) {
-		ar[i] = p;
-	} else {
-		ar[i] = ar2[i - index1 - 1];
+	for (int i = 0; i < ar_size; i++) {
+		if (i < index1) {
+			ar[i] = ar1[i];
+		} else if (i == index1) {
+			ar[i] = p;
+		} else {
+			ar[i] = ar2[i - index1 - 1];
+		}
 	}
-}
 
 }
 
