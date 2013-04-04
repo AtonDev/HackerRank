@@ -9,17 +9,6 @@ public class XORKey {
 
 
     public static void main(String[] args) throws IOException {
-
-        BitTrie bt = new InnerTrie();
-        try {
-            bt.insert(14457);
-        } catch (Exception e) {
-            System.exit(1);
-        }
-
-        System.out.println("something happened");
-        
-
         int t = 0;
         int n = 0;
         int q = 0;
@@ -36,44 +25,25 @@ public class XORKey {
             }
             for (int query = 0; query < q; query++) {
                 String[] q_params = reader.readLine().split("\\s");
-                System.out.println(max(Integer.parseInt(q_params[0]), 
+                try {
+                    System.out.println(max(Integer.parseInt(q_params[0]), 
                     Integer.parseInt(q_params[1]), Integer.parseInt(q_params[2]), 
                     keys));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    System.exit(1);
+                }
+                
             }
         }
     }
 
-    static int max(int a, int low, int high, ArrayList<Integer> keys) {
-        LinkedList<Integer> list = new LinkedList<Integer>();
+    static int max(int a, int low, int high, ArrayList<Integer> keys) throws Exception {
+        BitTrie keysTrie = new InnerTrie();
         for (int i = low - 1; i < high; i++) {
-            list.add(keys.get(i));
+            keysTrie.insert(keys.get(i).intValue());
         }
-        for (int bitIndex = 14; bitIndex >= 0; bitIndex -= 1) {
-            LinkedList<Integer> newlist = new LinkedList<Integer>();
-            for (int num : list) {
-                boolean isOne = false;
-                if ((get_bit(a, bitIndex) ^ get_bit(num, bitIndex)) == 1) {
-                    newlist.add(num);
-                    isOne = true;
-                }
-                if (isOne) {
-                    list = newlist;
-                }
-            }
-            if (list.size() == 1) {
-                return a ^ list.element().intValue();
-            }
-        }
-        return 0;
-    }
-
-    static byte get_bit(int number, int index) {
-        int constant = 1 << index;
-        if ((number & constant) == constant) {
-            return 1;
-        } else {
-            return 0;
-        }
+        return keysTrie.xorKey(a);
     }
 }
 
