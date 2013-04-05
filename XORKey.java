@@ -18,17 +18,22 @@ public class XORKey {
             String[] params = reader.readLine().split("\\s");
             n = Integer.parseInt(params[0]);
             q = Integer.parseInt(params[1]);
-            ArrayList<Integer> keys = new ArrayList<Integer>(n);
+            BitTrie keysTrie = new InnerTrie();
             String[] k = reader.readLine().split("\\s");
+            int index = 0;
             for (String i : k) {
-                keys.add(new Integer(i));
+                try {
+                    keysTrie.insert(new Integer(i), index);
+                    index += 1;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
             for (int query = 0; query < q; query++) {
                 String[] q_params = reader.readLine().split("\\s");
                 try {
-                    System.out.println(max(Integer.parseInt(q_params[0]), 
-                    Integer.parseInt(q_params[1]), Integer.parseInt(q_params[2]), 
-                    keys));
+                    System.out.println(keysTrie.xorKey(Integer.parseInt(q_params[0]), 
+                    Integer.parseInt(q_params[1]), Integer.parseInt(q_params[2])));
                 } catch (Exception e) {
                     e.printStackTrace();
                     System.exit(1);
@@ -38,13 +43,6 @@ public class XORKey {
         }
     }
 
-    static int max(int a, int low, int high, ArrayList<Integer> keys) throws Exception {
-        BitTrie keysTrie = new InnerTrie();
-        for (int i = low - 1; i < high; i++) {
-            keysTrie.insert(keys.get(i).intValue());
-        }
-        return keysTrie.xorKey(a);
-    }
 }
 
 
@@ -75,261 +73,238 @@ public class XORKey {
 
 
 
+abstract class BitTrie {
+
+    /** An empty trie. */
+    static protected final BitTrie EMPTY = new EmptyTrie();
+
+    /** Number of spaces in one indentation unit. */
+    static final int INDENTATION = 3;
+
+    /** The size in bits of an int. */
+    static protected int INT_SIZE = 15;
+
+    /** The label at this node. Defined only on leaves. */
+    abstract public int label() throws Exception;
+
+    /** True if this Trie is a leaf (containing a single String). */
+    abstract public boolean isLeaf();
+
+    /** True if this Trie is empty */
+    abstract public boolean isEmpty();
+
+    /** returns child at zero for bit==0 and
+     *  and child at one for bit==1. Works just for innerTrie. */
+    abstract protected BitTrie child(int bit) throws Exception;
+
+    /** Returns NEWCHILD at BIT. Requires this to be inner tree. */
+    abstract protected void setChild(int bit, BitTrie newChild) throws Exception;
+
+    /** Return true iff the trie contains the value at index INDEX. */
+    abstract protected boolean validIndex(int index);
+
+    /** Returns a TreeSet contaning the valid indexes. */
+    abstract protected TreeSet<Integer> getIndexes();
 
 
+    /** The result of inserting X into this Trie, if it is not
+     *  already there, and returning this. This trie is
+     *  unchanged if X is in it already. */
+    public BitTrie insert(int n, int index) throws Exception {
+        return insert(n, index, 0);
+    }
 
-
-
-
-
-
-
-/* BitTrie extension to work with this problem. */
-
-
-
-
-    abstract class BitTrie {
-
-        /** The empty Trie. */
-        public static final BitTrie EMPTY = new EmptyTrie();
-        
-        /** Returns the number of children of the trie. */
-        abstract protected int children();
-
-        /** Decrements and returns the number of children of the trie. */
-        abstract protected int decrementChildren();
-
-        /** Increments and returns the number of children of the trie. */
-        abstract protected int incrementChildren();
-
-        /** The label at this node. Defined only on leaves. */
-        abstract public int label() throws Exception;
-        
-        /** True if this Trie is a leaf (containing a single String). */
-        abstract public boolean isLeaf();
-        
-        /** True if this Trie is empty */
-        abstract public boolean isEmpty();
-        
-        /** The child numbered with character K. Requires that this node
-        * not be empty. Child 0 corresponds to ✷. */
-        abstract public BitTrie child(int k) throws Exception;
-        
-        /** Set the child numbered with character K to CHILD. Requires that
-        * this node not be empty. (Intended only for internal use. */
-        abstract protected void setChild(int k, BitTrie child) throws Exception;
-
-        /** True if X is in this Trie. */
-        public boolean isIn(int x) throws Exception {
-            BitTrie lp = longestPrefix(x, 0);
-            return lp.isLeaf() && lp.label() == x;
-        }
-
-        /** The node repsenting the longest prefix of X that
-         *  matches a int in this trie. */
-        private BitTrie longestPrefix(int x, int startLevel) throws Exception {
-            if (isEmpty() || isLeaf()) {
-                return this;
-            } 
-            int bit = getBit(x, startLevel);
-            if (child(bit).isEmpty()) {
-                return this;
-            } else {
-                return child(bit).longestPrefix(x, startLevel + 1);
-            }
-        }
-
-        /** The result of inserting X into this Trie, if it is not
-        * already there, and returning this. This trie is
-        * unchanged if X is in it already. */
-        public BitTrie insert(int x) throws Exception {
-            return insert(x, 0);
-        }
-        
-        /** Assumes this is the node at LEVEL in some trie.
-         *  Returns this after the NUM was inserted.
-         *  No effect if NUM is already in the trie. */
-        private BitTrie insert(int num, int level) throws Exception {
-            if (isEmpty()) {
-                return new LeafTrie(num);
-            }
-            int bit = getBit(num, level);
-            if (isLeaf()) {
-                if (num == label()) {
-                    return this;
-                } else if (bit == getBit(label(), level)) {
-                    return new InnerTrie(bit, insert(num, level + 1));
-                } else {
-                    BitTrie newNode = new InnerTrie(bit, new LeafTrie(num));
-                    newNode.setChild(getBit(label(), level), this);
-                    return newNode;
-                }
-            } else {
-                setChild(bit, child(bit).insert(num, level + 1));
-                incrementChildren();
-                return this;
-            }
-        }
-
-        /** The result of removing X from this Trie, if it is present.
-         *  The trie is unchanged if X is not present. */
-        public BitTrie remove(int x) throws Exception {
-            return remove(x, 0);
-        }
-
-
-        /** Removes NUM from this trie, which is assumed to be at 
-         *  LEVEL, and returns the resulting trie. */
-        private BitTrie remove(int num, int level) throws Exception {
-            if (isEmpty()) 
-                return this;
-            if (isLeaf()) {
-                if (num == label()) {
-                    return EMPTY;
-                } else {
-                    return this;
-                }
-            }
-            int bit = getBit(num, level);
-            setChild(bit, child(bit).remove(num, level + 1));
-            decrementChildren();
-            int d = onlyMember();
-            if (d >= 0)
-                return child(d);
+    /** Assumes that we are at level LEVEL in the trie
+     *  and constructs recursively the trie. It returns
+     *  this. */
+    private BitTrie insert(int n, int index, int level) throws Exception {
+        int bit = getBit(n, level);
+        if (isLeaf() && label() == n) {
+            return this;
+        } else if (level == INT_SIZE) {
+            return new LeafTrie(n, index);
+        } else if (isEmpty()) {
+            InnerTrie newNode = new InnerTrie(bit, insert(n, level + 1));
+            return newNode;
+        } else {
+            setChild(bit, child(bit).insert(n, level + 1));
             return this;
         }
-
-        /** Returns 1 or 0 if there a single int in the trie starting
-         *  at child 1 or 0 respectively. returns -1 otherwise. **/
-        private int onlyMember() {
-            if (children() == 1) {
-                return 1;
-            } else {
-                return -1;
-            }
-        }
-
-        /* some utility methods declaration. */
-
-        /** Return the bit at INDEX of NUM beginning from the left most. */
-        protected int getBit(int num, int index) {
-            int constant = 1 << (32 - index);
-            if ((num & constant) == constant) {
-                return 1;
-            } else {
-                return 0;
-            }
-        }
-
-        /** Returns the XOR-Key max value. */
-        public int xorKey(int a) throws Exception {
-            return xorKey(a, 0);
-        }
-
-        public int xorKey(int a, int level) throws Exception {
-            if (isEmpty()) {
-                return 0;
-            } else if (isLeaf()) {
-                return a ^ label();
-            } else {
-                int bit = getBit(a, level);
-                if (bit == 1) {
-                    if (child(0).isEmpty())
-                        return child(1).xorKey(a, level + 1);
-                    return child(0).xorKey(a, level + 1);
-                } else {
-                    if (child(1).isEmpty())
-                        return child(0).xorKey(a, level + 1);
-                    return child(1).xorKey(a, level + 1);
-                }
-            }
-        }
     }
 
 
 
-    /** Representation of an empty trie. */
-    class EmptyTrie extends BitTrie {
-        public boolean isEmpty() {return true;}
-        public boolean isLeaf() {return false;}
-        public int label() throws Exception {throw new Exception();}
-        public BitTrie child(int k) throws Exception {throw new Exception();}
-        public void setChild(int k, BitTrie child) throws Exception {throw new Exception();}
-        protected int children() {return 0;}
-        protected int incrementChildren() {return 0;}
-        protected int decrementChildren() {return 0;}
+
+    /** Returns the Nth bit of an int NUM beginning
+     *  the indexing from the left. Throws index out of bounds. */
+    protected int getBit(int num, int n) {
+        if (n < 0 || n > INT_SIZE - 1)
+            return -1;
+        int mask = 1 << (INT_SIZE - (n + 1));
+        if ((num & mask) == 0)
+            return 0;
+        return 1;
     }
 
 
-    /** Representation of a leaf trie. */
-    class LeafTrie extends BitTrie {
-        private int label;
 
-        /** constructor. a leaf trie containing label l. */
-        LeafTrie(int l) {label = l;}
-
-        public boolean isEmpty() {return false;}
-        public boolean isLeaf() {return true;}
-        public int label() throws Exception {return label;}
-        public BitTrie child(int k) throws Exception {return EMPTY;}
-        public void setChild(int k, BitTrie child) throws Exception {throw new Exception();}
-        protected int children() {return 1;}
-        protected int incrementChildren() {return 1;}
-        protected int decrementChildren() {return 1;}
+    /** Returns the XOR-Key max value. */
+    public int xorKey(int a, int low, int high) throws Exception {
+        return xorKey(a, low, high, 0);
     }
 
-    /** Representation of an inner trie. */
-    class InnerTrie extends BitTrie {
-        int cNum = 0;
-        int val;
-        BitTrie zero;
-        BitTrie one;
-
-        /** Constructor. A trie with val VALUE and child at 
-         *  indexValue equals to CHILD. */
-        InnerTrie(int childValue, BitTrie child) {
-            cNum = 1;
-            if (childValue == 0) {
-                zero = child;
+    public int xorKey(int a, int low, int high, int level) throws Exception {
+        if (isEmpty())
+            return 0;
+        else if (isLeaf()) 
+            return a ^ label();
+        else {
+            int bit = getBit(a, level);
+            if (bit == 1 && !(high <= child(1).getIndexes().first() 
+                || low > child(1).getIndexes().last())) {
+                if (child(0).isEmpty())
+                    return child(1).xorKey(a, low, high, level + 1);
+                return child(0).xorKey(a, low, high, level + 1);
             } else {
-                one = child;
+                if (child(1).isEmpty())
+                    return child(0).xorKey(a, low, high, level + 1);
+                return child(1).xorKey(a, low, high, level + 1);
             }
-        }
 
-        InnerTrie() {
-            cNum = 0;
-            zero = new EmptyTrie();
-            one = new EmptyTrie();
-        }
-
-        public boolean isEmpty() {return false;}
-        public boolean isLeaf() {return false;}
-        public int label() throws Exception {throw new Exception();}
-        public BitTrie child(int childValue) throws Exception {
-            if (childValue == 0) {
-                return zero;
-            } else {
-                return one;
-            }
-        }
-        public void setChild(int childValue, BitTrie child) throws Exception {
-            if (childValue == 0) {
-                zero = child;
-            } else {
-                one = child;
-            }
-        }
-        protected int children() {
-            return cNum;
-        }
-        protected int incrementChildren() {
-            cNum += 1;
-            return cNum;
-        }
-        protected int decrementChildren() {
-            cNum -= 1;
-            return cNum;
         }
     }
+}
+
+
+
+
+/** Representation of an empty trie. */
+class EmptyTrie extends BitTrie {
+    @Override
+    public int label() throws Exception {throw new Exception();}
+    @Override
+    public boolean isLeaf() {return false;}
+    @Override
+    public boolean isEmpty() {return true;}
+    @Override
+    protected BitTrie child(int bit) throws Exception {throw new Exception();}
+    @Override
+    protected void setChild(int bit, BitTrie newChild) throws Exception {throw new Exception();}
+    @Override
+    protected boolean validIndex(int index) {return false;}
+    @Override
+    protected TreeSet<Integer> getIndexes() {return new TreeSet<Integer>(); }
+}
+
+/** Representation of a leaf trie. */
+class LeafTrie extends BitTrie {
+    private int _index;
+    private int _label;
+    /** Constructor that sets this.lable to LABEL. */
+    public LeafTrie(int label, int index) {
+        _label = label;
+        _index = index;
+    }
+    @Override
+    public int label() throws Exception {return _label;}
+    @Override
+    public boolean isLeaf() {return true;}
+    @Override
+    public boolean isEmpty() {return false;}
+    @Override
+    protected BitTrie child(int bit) throws Exception {throw new Exception();}
+    @Override
+    protected void setChild(int bit, BitTrie newChild) throws Exception {throw new Exception();}
+    @Override
+    protected boolean validIndex(int index) {return index == _index;}
+    @Override
+    protected TreeSet<Integer> getIndexes() {
+        TreeSet<Integer> res = new TreeSet<Integer>();
+        res.add(_index);
+        return res;
+    }
+}
+
+/** Representation of an inner trie. */
+class InnerTrie extends BitTrie {
+    /** Stores the indexes of values contained by this trie. */
+    private TreeSet<Integer> _indexes;
+    /** Stores the child at bit==0. */
+    private BitTrie _zero;
+    /** Stores the child at bit==1. */
+    private BitTrie _one;
+    /** Constructor. Initializes trie with no children. */
+    protected InnerTrie() {
+        _zero = EMPTY;
+        _one = EMPTY;
+        _indexes = new TreeSet<Integer>();
+    }
+    /** Constructor. Initializes trie with children NEWCHILD at zero or one
+     *  according to BIT.  */
+    protected InnerTrie(int bit, BitTrie newChild) {
+        _zero = EMPTY;
+        _one = EMPTY;
+        _indexes = new TreeSet<Integer>();
+        setChild(bit, newChild);
+    }
+    @Override
+    public int label() throws Exception {throw new Exception();}
+    @Override
+    public boolean isLeaf() {return false;}
+    @Override
+    public boolean isEmpty() {return false;}
+    @Override
+    protected BitTrie child(int bit) throws Exception {
+        if (bit == 0)
+            return _zero;
+        return _one;
+    }
+    @Override
+    protected void setChild(int bit, BitTrie newChild) {
+        if (bit == 0)
+            _zero = newChild;
+        else
+            _one = newChild;
+        for (Integer n : newChild.getIndexes())
+            _indexes.add(n);
+    }
+    @Override
+    protected boolean validIndex(int index) {
+        return _indexes.contains(index);
+    }
+    @Override
+    protected TreeSet<Integer> getIndexes() {
+        return _indexes;
+    }
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
