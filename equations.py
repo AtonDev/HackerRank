@@ -1,4 +1,4 @@
-import sys, time
+import sys
 
 
 
@@ -45,10 +45,7 @@ primes = [2, 3, 5, 7, 11, 13, 17, 19, 23
 
 def main():
 	N = int(sys.argv[1])
-	begin = time.time()
 	print divisors_n_fact_sqr(N) % 1000007
-	end = time.time()
-	print 'elpased time: {0:.1f}'.format(end - begin)
 	return 0
 
 
