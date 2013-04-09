@@ -44,7 +44,7 @@ primes = [2, 3, 5, 7, 11, 13, 17, 19, 23
 
 
 def main():
-	N = int(sys.argv[1])
+	N = int(input())
 	print divisors_n_fact_sqr(N) % 1000007
 	return 0
 
